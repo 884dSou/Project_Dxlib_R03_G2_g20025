@@ -17,7 +17,7 @@ struct KEYBOARD
 	int OldAllKeyState[KEY_KIND_MAX];		//以前のキーの入力時間を管理
 };
 
-//外部のgフローバル関数
+//外部のグローバル関数
 extern KEYBOARD keyboard;
 
 //プロトタイプ宣言

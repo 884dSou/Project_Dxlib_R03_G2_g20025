@@ -1,6 +1,7 @@
 //ヘッダーファイルの読み込み
 #include"DxLib.h"		//DxLibを使うのに必要
 #include"keyboard.h"	//キーボードの処理
+#include"FPS.h"			//FPSの処理
 
 //マクロ定義
 #define GAME_TITLE "ゲームタイトル"
@@ -115,6 +116,9 @@ int WINAPI WinMain(
 		//キーボード入力の更新
 		AllKeyUpdate();
 
+		//FPS値の更新
+		FPSUpdate();
+
 		//ESCキーで強制終了
 		if (KeyClick(KEY_INPUT_ESCAPE) == TRUE) { break; }
 
@@ -174,6 +178,11 @@ int WINAPI WinMain(
 
 		DrawCircle(X, Y, radius, GetColor(255, 0, 0), TRUE);
 
+		//FPS値を描画
+		FPSDraw();
+
+		//FPS値を待つ
+		FPSWait();
 
 		ScreenFlip();		//ダブルバッファリングした画面を描画
 
