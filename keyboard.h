@@ -1,7 +1,7 @@
 #pragma once
 
 //ヘッダファイルの読み込み
-#include "DxLib.h"
+#include "game.h"
 
 //キーボードのヘッダファイル
 
