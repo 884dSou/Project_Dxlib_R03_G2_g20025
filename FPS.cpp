@@ -5,7 +5,7 @@
 #include "FPS.h"
 
 //グローバル変数
-extern FPS fps;
+FPS fps;
 
 //関数
 
@@ -24,10 +24,10 @@ VOID FPSUpdate(VOID)
 		fps.IsInitFlg = TRUE;		//フラグを立てる
 	}
 
-	//
+	//現在の時刻をマイクロ秒単位で取得
 	fps.NowTime = GetNowHiPerformanceCount();
 
-	//
+	//前回回収した時間からの経過時間を秒（少数）に変換してからセット
 	fps.DeltaTime = (fps.NowTime - fps.OldTime) / 1000000.0f;
 
 	//今回取得した時間を保存
@@ -45,13 +45,13 @@ VOID FPSUpdate(VOID)
 
 		//現在の時刻から、０フレーム目の時間を引き、FPSの数値で割る
 		//現在の平均FPS値が出る
-		fps.DrawValue = 1000000.0f / ((fps.StartTime) / (float)fps.SampleRate);
+		fps.DrawValue = 1000000.f / ((fps.NowTime - fps.StartTime) / (float)fps.SampleRate);
 
 		//測定開始時刻をマイクロ秒単位で取得
 		fps.StartTime = GetNowHiPerformanceCount();
 
 		//カウンタの初期化
-		fps.Count = 0;
+		fps.Count = 1;
 	}
 	return;
 }
@@ -63,7 +63,7 @@ VOID FPSUpdate(VOID)
 VOID FPSDraw(VOID)
 {
 	//文字列を描画
-	DrawFormatString(0, 20, GetColor(0, 0, 0), "FPS;%.lf", fps.DrawValue);
+	DrawFormatString(0, 20, GetColor(0, 0, 0), "FPS:%.1f", fps.DrawValue);
 
 	return;
 }
@@ -75,7 +75,7 @@ VOID FPSDraw(VOID)
 VOID FPSWait(VOID)
 {
 	//現在の時刻　最初の時刻で、現在かかっている時刻を取得する
-	LONGLONG resultTime = fps.NowTime = fps.StartTime;
+	LONGLONG resultTime = fps.NowTime - fps.StartTime;
 	
 	//待つべきミリ秒数(１秒/FPS値　＊　現在のフレーム数)から、現在かかっている時刻を引く
 	int waitTime = 1000000.0f / fps.Value * fps.Count - resultTime;
@@ -86,7 +86,7 @@ VOID FPSWait(VOID)
 	//処理が早かったら、処理を待つ
 	if(waitTime > 0)
 	{
-		WaitTimer(waitTime);
+		WaitTimer(waitTime);	//引数ミリ秒待つ
 	}
 
 	//垂直同期をOFFにしているか？
