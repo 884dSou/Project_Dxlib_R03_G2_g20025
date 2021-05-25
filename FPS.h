@@ -25,6 +25,9 @@ struct FPS
 
 };
 
+//グローバル変数の外部参照
+extern FPS fps;	//FPSの管理
+
 //プロトタイプ宣言
 VOID FPSUpdate(VOID);	//FPS値を更新する
 VOID FPSDraw(VOID);		//FPS値を描画

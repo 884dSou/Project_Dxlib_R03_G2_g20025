@@ -100,7 +100,7 @@ VOID FPSWait(VOID)
 			//待つ時間10ミリ　<=　1秒/60FPS　=　16.6666ミリ　もう少し早くできる
 			if (waitTime > 0 && waitTime <= 1000.0f / fps.Value)
 			{
-				fps.Count++;
+				fps.Value++;
 			}
 			else
 			{
