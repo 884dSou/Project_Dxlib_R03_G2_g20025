@@ -21,11 +21,27 @@ struct CHARCTOR
 	BOOL IsDraw = FALSE;	//画像が描画できる？
 };
 
+//動画の構造体
+struct MOVIE
+{
+	int handle = -1;
+	char path[255];
+
+	int x;
+	int y;
+	int width;
+	int height;
+
+	int Volume = 255;	//ボリューム（最小）1～255（最大）
+};
 
 //シーンを管理する変数
 GAME_SCEAEN GameScene;				//現在のゲームシーン
 GAME_SCEAEN OldGameScene;			//前回のゲームシーン
 GAME_SCEAEN NextGameScene;			//次のゲームシーン
+
+//プレイ背景の動画
+MOVIE playMovie;
 
 //プレイヤー
 CHARCTOR player;
@@ -112,6 +128,30 @@ int WINAPI WinMain(
 	GameScene = GAME_SCENE_TITLE;
 
 	//ゲーム全体の初期化
+
+	//プレイ動画の背景を読み込み
+	strcpyDx(playMovie.path, ".\\image\\playMovie.mp4");
+	playMovie.handle = LoadGraph(playMovie.path);	//画像の読み込み
+
+	//画像が読み込めなかったときは、エラー(-1)が入る
+	if (playMovie.handle == -1)
+	{
+		MessageBox(
+			GetMainWindowHandle(),	//メインのウィンドウハンドル
+			playMovie.path,			//メッセージタイトル
+			"画像読み込みエラー！",	//メッセージ本文
+			MB_OK					//ボタン
+		);
+
+		DxLib_End();	//強制終了
+		return -1;		//エラー終了
+	}
+
+	//画像の幅と高さを取得
+	GetGraphSize(playMovie.handle, &playMovie.width, &playMovie.height);
+
+	//動画のボリューム
+	playMovie.Volume = 255;
 
 	//プレイヤーの画像を読み込み
 	strcpyDx(player.path, ".\\image\\player.png");
@@ -239,6 +279,7 @@ int WINAPI WinMain(
 	}
 
 	//終わるときの処理
+	DeleteGraph(playMovie.handle);
 	DeleteGraph(player.handle);
 	DeleteGraph(gaol.handle);
 
@@ -364,6 +405,17 @@ VOID PlayProc(VOID)
 /// </summary>
 VOID PlayDraw(VOID)
 {
+	//動画を描画
+	if (GetMovieStateToGraph(playMovie.handle) == 0)
+	{
+		//再生する
+		SeekMovieToGraph(playMovie.handle, 0);	//シークバーを最初に戻す
+		PlayMovieToGraph(playMovie.handle);
+	}
+	//動画を描画(画面を引き延ばす)
+	DrawExtendGraph(0, 0, GAME_WIDTH, GAME_HEIGHT, playMovie.handle, TRUE);
+
+
 	//ゴールを描画
 	if (gaol.IsDraw == TRUE)
 	{
