@@ -70,8 +70,10 @@ VOID ChangeDraw(VOID);	//切り替え画面（描画）
 
 VOID ChangeScene(GAME_SCEAEN scene);	//シーン切り替え
 
-VOID CollUpdatePlayer(CHARCTOR* chara);
-VOID CollUpdate(CHARCTOR* chara);
+VOID CollUpdatePlayer(CHARCTOR* chara);	//当たり判定の領域を更新
+VOID CollUpdate(CHARCTOR* chara);	//当たり判定
+
+BOOL OnCollrect(RECT a, RECT b);	//矩形と矩形の当たり判定
 
 //プログラムはWinMainから始まります
 //Windowsのプログラミング方法＝（WinAPI）で動いている
@@ -132,14 +134,14 @@ int WINAPI WinMain(
 	//画像の幅と高さを取得
 	GetGraphSize(player.handle, &player.width, &player.height);
 
-	//当たり判定を更新する
-	CollUpdatePlayer(&player);
-
 	//プレイヤーを初期化
 	player.x = GAME_WIDTH / 2 - player.width / 2;
 	player.y = GAME_HEIGHT / 2 - player.height / 2;
 	player.speed = 500;
 	player.IsDraw = TRUE;
+
+	//当たり判定を更新する
+	CollUpdatePlayer(&player);
 
 	//ゴールの画像を読み込み
 	strcpyDx(gaol.path, ".\\image\\gaol.png");
@@ -162,14 +164,14 @@ int WINAPI WinMain(
 	//画像の幅と高さを取得
 	GetGraphSize(gaol.handle, &gaol.width, &gaol.height);
 
-	//当たり判定を更新する
-	CollUpdate(&gaol);
-
 	//ゴールを初期化
-	gaol.x = GAME_WIDTH - gaol.width ;
-	gaol.y = 0;
+	gaol.x = GAME_WIDTH - gaol.width - 10;
+	gaol.y = 10;
 	gaol.speed = 500;
 	gaol.IsDraw = TRUE;
+
+	//当たり判定を更新する
+	CollUpdate(&gaol);
 
 	//無限ループ
 	while (1)
@@ -314,13 +316,13 @@ VOID Play(VOID)
 /// </summary>
 VOID PlayProc(VOID)
 {
-	if (KeyClick(KEY_INPUT_RETURN) == TRUE)
-	{
-		//シーン切り替え
+	//if (KeyClick(KEY_INPUT_RETURN) == TRUE)
+	//{
+	//	//シーン切り替え
 
-		//エンド画面に切り替え
-		ChangeScene(GAME_SCENE_END);
-	}
+	//	//エンド画面に切り替え
+	//	ChangeScene(GAME_SCENE_END);
+	//}
 
 	//プレイヤーの操作
 	if (KeyDown(KEY_INPUT_W) == TRUE)
@@ -342,6 +344,17 @@ VOID PlayProc(VOID)
 
 	//当たり判定を更新する
 	CollUpdatePlayer(&player);
+	
+	//当たり判定を更新する
+	CollUpdate(&gaol);
+
+	//プレイヤーがゴールに当たったとき
+	if (OnCollrect(player.coll, gaol.coll) == TRUE)
+	{
+		//エンド画面に切り替え
+		ChangeScene(GAME_SCENE_END);
+		return;		//処理を強制終了
+	}
 
 	return;
 }
@@ -545,4 +558,29 @@ VOID CollUpdate(CHARCTOR* chara)
 	chara->coll.bottom = chara->y + chara->height;
 
 	return;
+}
+
+/// <summary>
+/// オブジェクトの衝突の確認
+/// </summary>
+/// <param name="a">当たり判定の領域（a）</param>
+/// <param name="b">当たり判定の領域（b）</param>
+/// <returns>当たったら「TRUE」当たらなかったら「FALSE」</returns>
+BOOL OnCollrect(RECT a, RECT b)
+{
+	if (
+		a.left < b.right &&
+		a.right > b.left &&
+		a.top < b.bottom &&
+		a.bottom > b.top
+		)
+	{
+		//当たっているとき
+		return TRUE;
+	}
+	else
+	{
+		//当たってないとき
+		return FALSE;
+	}
 }
