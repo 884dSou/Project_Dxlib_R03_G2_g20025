@@ -64,6 +64,8 @@ AUDIO TitleBGM;
 AUDIO PlayBGM;
 AUDIO EndBGM;
 
+AUDIO playerSE;
+
 //画面の切り替え
 BOOL IsFadeOut = FALSE;		//フェードアウト
 BOOL IsFadeIn = FALSE;		//フェードイン
@@ -231,6 +233,8 @@ int WINAPI WinMain(
 	DeleteSoundMem(TitleBGM.handle);
 	DeleteSoundMem(PlayBGM.handle);
 	DeleteSoundMem(EndBGM.handle);
+	
+	DeleteSoundMem(playerSE.handle);
 
 	//DxLib使用の終了処理
 	DxLib_End();
@@ -307,9 +311,12 @@ BOOL GameLoad()
 	//画像の幅と高さを取得
 	GetGraphSize(gaol.handle, &gaol.width, &gaol.height);
 
+	//音楽を読み込む
 	if (!LoadAudio(&TitleBGM, ".\\audio\\chiisanaomochabako.mp3", 255, DX_PLAYTYPE_LOOP)) { return FALSE; }
 	if (!LoadAudio(&PlayBGM, ".\\audio\\natsuyasuminotanken.mp3", 255, DX_PLAYTYPE_LOOP)) { return FALSE; }
 	if (!LoadAudio(&EndBGM, ".\\audio\\hiyokonokakekko.mp3", 255, DX_PLAYTYPE_LOOP)) { return FALSE; }
+
+	if (!LoadAudio(&playerSE, ".\\audio\\畳の上を走る.mp3", 255, DX_PLAYTYPE_BACK)) { return FALSE; }
 
 	return TRUE;
 }
@@ -439,18 +446,46 @@ VOID PlayProc(VOID)
 	if (KeyDown(KEY_INPUT_W) == TRUE)
 	{
 		player.y -= player.speed * fps.DeltaTime;
+		
+		//足音が流れていないとき
+		if (CheckSoundMem(playerSE.handle) == 0)
+		{
+			//動く時の効果音
+			PlaySoundMem(playerSE.handle, playerSE.playType);
+		}
 	}
 	if (KeyDown(KEY_INPUT_S) == TRUE)
 	{
 		player.y += player.speed * fps.DeltaTime;
+
+		//足音が流れていないとき
+		if (CheckSoundMem(playerSE.handle) == 0)
+		{
+			//動く時の効果音
+			PlaySoundMem(playerSE.handle, playerSE.playType);
+		}
 	}
 	if (KeyDown(KEY_INPUT_A) == TRUE)
 	{
 		player.x -= player.speed * fps.DeltaTime;
+
+		//足音が流れていないとき
+		if (CheckSoundMem(playerSE.handle) == 0)
+		{
+			//動く時の効果音
+			PlaySoundMem(playerSE.handle, playerSE.playType);
+		}
 	}
 	if (KeyDown(KEY_INPUT_D) == TRUE)
 	{
 		player.x += player.speed * fps.DeltaTime;
+		
+		//足音が流れていないとき
+		if (CheckSoundMem(playerSE.handle) == 0)
+		{
+			//動く時の効果音
+			PlaySoundMem(playerSE.handle, playerSE.playType);
+		}
 	}
 
 	//当たり判定を更新する
