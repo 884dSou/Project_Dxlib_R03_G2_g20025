@@ -93,6 +93,11 @@ int fadeInCntInit = fadeTimeMax;	//初期値
 int fadeInCnt = fadeInCntInit;		//フェードインのカウンタ
 int fadeInCntMax = 0;				//フェードインのカウンタMAX
 
+//ClickEnter
+int ClickEnterCnt = 0;
+int ClickEnterCntMax = 60;
+BOOL ClickEnterBrink = FALSE;
+
 //プロトタイプ宣言
 VOID Title(VOID);		//タイトル画面
 VOID TitleProc(VOID);	//タイトル画面（処理）
@@ -246,6 +251,10 @@ int WINAPI WinMain(
 	
 	DeleteSoundMem(playerSE.handle);
 
+	DeleteGraph(TitleLogo.handle);
+	DeleteGraph(TitleEnter.handle);
+	DeleteGraph(EndClear.handle);
+
 	//DxLib使用の終了処理
 	DxLib_End();
 
@@ -286,9 +295,9 @@ BOOL GameLoad()
 	if (!LoadImg(&gaol.img , ".\\image\\gaol.png")) { return FALSE; }	//ゴールの画像を読み込み
 
 	//ロゴの読み込み
-	if (!LoadImg(&TitleLogo, ".\\image\\TitleEnter.png")) { return FALSE; }
-	if (!LoadImg(&TitleEnter, ".\\image\\TitleLogo.png")) { return FALSE; }
-	//if (!LoadImg(&EndClear, ".\\image\\End.png")) { return FALSE; }
+	if (!LoadImg(&TitleLogo, ".\\image\\TitleLogo.png")) { return FALSE; }
+	if (!LoadImg(&TitleEnter, ".\\image\\TitleEnter.png")) { return FALSE; }
+	if (!LoadImg(&EndClear, ".\\image\\End.png")) { return FALSE; }
 
 	//音楽を読み込む
 	if (!LoadAudio(&TitleBGM, ".\\audio\\chiisanaomochabako.mp3", 255, DX_PLAYTYPE_LOOP)) { return FALSE; }
@@ -314,6 +323,7 @@ VOID GameInit(VOID)
 
 	//当たり判定を更新する
 	CollUpdatePlayer(&player);
+
 	//ゴールを初期化
 	gaol.img.x = GAME_WIDTH - gaol.img.width - 10;
 	gaol.img.y = 10;
@@ -322,6 +332,22 @@ VOID GameInit(VOID)
 
 	//当たり判定を更新する
 	CollUpdate(&gaol);
+
+	//タイトルロゴの位置を決める
+	TitleLogo.x = GAME_WIDTH / 2 - TitleLogo.width / 2;
+	TitleLogo.y = 65;
+
+	//クリックエンターの位置
+	TitleEnter.x = GAME_WIDTH / 2 - TitleEnter.width / 2;
+	TitleEnter.y = GAME_HEIGHT - TitleEnter.height - 100;
+
+	//クリアの位置
+	EndClear.x = GAME_WIDTH / 2 - EndClear.width / 2;
+	EndClear.y = GAME_HEIGHT / 2 - EndClear.height / 2;
+
+	ClickEnterCnt = 0;
+	ClickEnterCntMax = 60;
+	ClickEnterBrink = FALSE;
 }
 
 //▼▼▼▼▼▼▼▼▼▼タイトル画面▼▼▼▼▼▼▼▼▼▼▼
@@ -386,6 +412,22 @@ VOID TitleProc(VOID)
 /// </summary>
 VOID TitleDraw(VOID)
 {
+	DrawGraph(TitleLogo.x, TitleLogo.y, TitleLogo.handle, TRUE);
+	
+	if (ClickEnterCnt < ClickEnterCntMax) { ClickEnterCnt++; }
+	else
+	{
+		if (ClickEnterBrink == TRUE)ClickEnterBrink = FALSE;
+		else if (ClickEnterBrink == FALSE)ClickEnterBrink = TRUE;
+		
+		ClickEnterCnt = 0;
+	}
+
+	if(ClickEnterBrink == TRUE)
+	{
+		DrawGraph(TitleEnter.x, TitleEnter.y, TitleEnter.handle, TRUE);
+	}
+
 	DrawString(0, 0, "タイトル画面", GetColor(0, 0, 0));
 	return;
 }
@@ -581,6 +623,8 @@ VOID EndProc(VOID)
 /// </summary>
 VOID EndDraw(VOID)
 {
+	DrawGraph(EndClear.x, EndClear.y, EndClear.handle, TRUE);
+
 	DrawString(0, 0, "エンド画面", GetColor(0, 0, 0));
 	return;
 }
@@ -794,4 +838,8 @@ BOOL LoadImg(IMAGE* img,const char* path)
 
 		return FALSE;		//エラー終了
 	}
+	
+	GetGraphSize(img->handle, &img->width, &img->height);
+
+	return TRUE;
 }
