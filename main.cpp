@@ -28,6 +28,7 @@ struct CHARCTOR
 
 	RECT coll;			//当たり判定の領域（四角）
 	int speed =1;
+	int scean = 0;		//当たったものによって変わる
 };
 
 //動画の構造体
@@ -59,6 +60,9 @@ MOVIE playMovie;
 //プレイヤー
 CHARCTOR player;
 
+//敵（障害物）
+CHARCTOR enemy;
+
 //ゴール
 CHARCTOR gaol;
 
@@ -66,7 +70,7 @@ CHARCTOR gaol;
 IMAGE TitleLogo;
 IMAGE TitleEnter;
 IMAGE EndClear;
-
+IMAGE EndOver;
 
 //音楽
 AUDIO TitleBGM;
@@ -244,6 +248,7 @@ int WINAPI WinMain(
 	DeleteGraph(playMovie.img.handle);
 	DeleteGraph(player.img.handle);
 	DeleteGraph(gaol.img.handle);
+	DeleteGraph(enemy.img.handle);
 
 	DeleteSoundMem(TitleBGM.handle);
 	DeleteSoundMem(PlayBGM.handle);
@@ -254,6 +259,7 @@ int WINAPI WinMain(
 	DeleteGraph(TitleLogo.handle);
 	DeleteGraph(TitleEnter.handle);
 	DeleteGraph(EndClear.handle);
+	DeleteGraph(EndOver.handle);
 
 	//DxLib使用の終了処理
 	DxLib_End();
@@ -293,11 +299,13 @@ BOOL GameLoad()
 	//画像の読み込み
 	if (!LoadImg(&player.img ,".\\image\\player.png")) { return FALSE; }	//プレイヤーの画像を読み込み
 	if (!LoadImg(&gaol.img , ".\\image\\gaol.png")) { return FALSE; }	//ゴールの画像を読み込み
+	if (!LoadImg(&enemy.img , ".\\image\\enemy.png")) { return FALSE; }	//障害物の画像を読み込み
 
 	//ロゴの読み込み
 	if (!LoadImg(&TitleLogo, ".\\image\\TitleLogo.png")) { return FALSE; }
 	if (!LoadImg(&TitleEnter, ".\\image\\TitleEnter.png")) { return FALSE; }
 	if (!LoadImg(&EndClear, ".\\image\\End.png")) { return FALSE; }
+	if (!LoadImg(&EndOver, ".\\image\\EndOver.png")) { return FALSE; }
 
 	//音楽を読み込む
 	if (!LoadAudio(&TitleBGM, ".\\audio\\chiisanaomochabako.mp3", 255, DX_PLAYTYPE_LOOP)) { return FALSE; }
@@ -316,13 +324,22 @@ BOOL GameLoad()
 VOID GameInit(VOID)
 {
 	//プレイヤーを初期化
-	player.img.x = GAME_WIDTH / 2 - player.img.width / 2;
-	player.img.y = GAME_HEIGHT / 2 - player.img.height / 2;
+	player.img.x = 10;
+	player.img.y = GAME_HEIGHT - player.img.height - 10;
 	player.speed = 500;
 	player.img.IsDraw = TRUE;
 
 	//当たり判定を更新する
 	CollUpdatePlayer(&player);
+
+	//障害物の初期化
+	enemy.img.x = GAME_WIDTH / 2;
+	enemy.img.y = GAME_HEIGHT / 2 - enemy.img.width;
+	enemy.speed = 500;
+	enemy.img.IsDraw = TRUE;
+
+	//当たり判定の更新
+	CollUpdate(&enemy);
 
 	//ゴールを初期化
 	gaol.img.x = GAME_WIDTH - gaol.img.width - 10;
@@ -344,9 +361,14 @@ VOID GameInit(VOID)
 	//クリアの位置
 	EndClear.x = GAME_WIDTH / 2 - EndClear.width / 2;
 	EndClear.y = GAME_HEIGHT / 2 - EndClear.height / 2;
+	
+	//ゲームオーバーの位置
+	EndOver.x = GAME_WIDTH / 2 - EndOver.width / 2;
+	EndOver.y = GAME_HEIGHT / 2 - EndOver.height / 2;
 
+	//クリックエンターの設定
 	ClickEnterCnt = 0;
-	ClickEnterCntMax = 60;
+	ClickEnterCntMax = 30;
 	ClickEnterBrink = FALSE;
 }
 
@@ -464,7 +486,7 @@ VOID PlayProc(VOID)
 	}
 
 	//プレイヤーの操作
-	if (KeyDown(KEY_INPUT_W) == TRUE)
+	if (KeyDown(KEY_INPUT_W) == TRUE && player.coll.top > 0)
 	{
 		player.img.y -= player.speed * fps.DeltaTime;
 		
@@ -475,7 +497,7 @@ VOID PlayProc(VOID)
 			PlaySoundMem(playerSE.handle, playerSE.playType);
 		}
 	}
-	if (KeyDown(KEY_INPUT_S) == TRUE)
+	if (KeyDown(KEY_INPUT_S) == TRUE && player.coll.bottom < GAME_HEIGHT)
 	{
 		player.img.y += player.speed * fps.DeltaTime;
 
@@ -486,7 +508,7 @@ VOID PlayProc(VOID)
 			PlaySoundMem(playerSE.handle, playerSE.playType);
 		}
 	}
-	if (KeyDown(KEY_INPUT_A) == TRUE)
+	if (KeyDown(KEY_INPUT_A) == TRUE && player.coll.left > 0)
 	{
 		player.img.x -= player.speed * fps.DeltaTime;
 
@@ -497,7 +519,7 @@ VOID PlayProc(VOID)
 			PlaySoundMem(playerSE.handle, playerSE.playType);
 		}
 	}
-	if (KeyDown(KEY_INPUT_D) == TRUE)
+	if (KeyDown(KEY_INPUT_D) == TRUE && player.coll.right < GAME_WIDTH)
 	{
 		player.img.x += player.speed * fps.DeltaTime;
 		
@@ -512,6 +534,9 @@ VOID PlayProc(VOID)
 	//当たり判定を更新する
 	CollUpdatePlayer(&player);
 	
+	//障害物の判定を更新する
+	CollUpdate(&enemy);
+
 	//当たり判定を更新する
 	CollUpdate(&gaol);
 
@@ -520,6 +545,23 @@ VOID PlayProc(VOID)
 	{
 		//BGMをとめる
 		StopSoundMem(PlayBGM.handle);
+
+		//クリアした時
+		player.scean = 0;
+
+		//エンド画面に切り替え
+		ChangeScene(GAME_SCENE_END);
+		return;		//処理を強制終了
+	}
+	
+	//プレイヤーがゴールに当たったとき
+	if (OnCollrect(player.coll, enemy.coll) == TRUE)
+	{
+		//BGMをとめる
+		StopSoundMem(PlayBGM.handle);
+
+		//クリアした時
+		player.scean = 1;
 
 		//エンド画面に切り替え
 		ChangeScene(GAME_SCENE_END);
@@ -556,6 +598,21 @@ VOID PlayDraw(VOID)
 		{
 			//四角を描画
 			DrawBox(gaol.coll.left, gaol.coll.top, gaol.coll.right, gaol.coll.bottom,
+				GetColor(255, 0, 0), FALSE);
+		}
+	}
+	
+	//障害物を描画
+	if (enemy.img.IsDraw == TRUE)
+	{
+		//画像を描画
+		DrawGraph(enemy.img.x, enemy.img.y, enemy.img.handle, TRUE);
+
+		//デバッグの時は、当たり判定領域を描画
+		if (Game_DEBUG == TRUE)
+		{
+			//四角を描画
+			DrawBox(enemy.coll.left, enemy.coll.top, enemy.coll.right, enemy.coll.bottom,
 				GetColor(255, 0, 0), FALSE);
 		}
 	}
@@ -611,8 +668,15 @@ VOID EndProc(VOID)
 	//BGMが流れていないとき
 	if (CheckSoundMem(EndBGM.handle) == 0)
 	{
-		//BGMを流す
-		PlaySoundMem(EndBGM.handle, EndBGM.playType);
+		switch (player.scean)
+		{
+		case 0:
+			//BGMを流す
+			PlaySoundMem(EndBGM.handle, EndBGM.playType);
+			break;
+		default:
+			break;
+		}
 	}
 
 	return;
@@ -623,8 +687,16 @@ VOID EndProc(VOID)
 /// </summary>
 VOID EndDraw(VOID)
 {
-	DrawGraph(EndClear.x, EndClear.y, EndClear.handle, TRUE);
-
+	switch (player.scean)
+	{
+	case 0:
+		DrawGraph(EndClear.x, EndClear.y, EndClear.handle, TRUE);
+		break;
+	default:
+		DrawGraph(EndOver.x, EndOver.y, EndOver.handle, TRUE);
+		break;
+	}
+	
 	DrawString(0, 0, "エンド画面", GetColor(0, 0, 0));
 	return;
 }
