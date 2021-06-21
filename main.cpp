@@ -294,7 +294,7 @@ BOOL GameLoad()
 	GetGraphSize(playMovie.img.handle, &playMovie.img.width, &playMovie.img.height);
 
 	//動画のボリューム
-	playMovie.Volume = 255;
+	playMovie.Volume = 0;
 
 	//画像の読み込み
 	if (!LoadImg(&player.img ,".\\image\\player.png")) { return FALSE; }	//プレイヤーの画像を読み込み
@@ -655,7 +655,7 @@ VOID EndProc(VOID)
 	if (KeyClick(KEY_INPUT_RETURN) == TRUE)
 	{
 		//BGMをとめる
-		StopSoundMem(TitleBGM.handle);
+		StopSoundMem(EndBGM.handle);
 
 		//シーン切り替え
 
